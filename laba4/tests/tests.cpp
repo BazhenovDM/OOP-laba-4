@@ -13,162 +13,163 @@
 using T = double;
 using FigurePtr = std::shared_ptr<Figure<T>>;
 
-static FigurePtr makeTriangle(const std::string& s) {
-    auto p = std::make_shared<Triangle<T>>();
-    std::istringstream is(s);
-    is >> *p;
-    return p;
+static FigurePtr create_triangle(const std::string& coords) {
+    auto fig = std::make_shared<Triangle<T>>();
+    std::istringstream in(coords);
+    in >> *fig;
+    return fig;
 }
 
-static FigurePtr makeSquare(const std::string& s) {
-    auto p = std::make_shared<Square<T>>();
-    std::istringstream is(s);
-    is >> *p;
-    return p;
+static FigurePtr create_square(const std::string& coords) {
+    auto fig = std::make_shared<Square<T>>();
+    std::istringstream in(coords);
+    in >> *fig;
+    return fig;
 }
 
-static FigurePtr makeOctagon(const std::string& s) {
-    auto p = std::make_shared<Octagon<T>>();
-    std::istringstream is(s);
-    is >> *p;
-    return p;
+static FigurePtr create_octagon(const std::string& coords) {
+    auto fig = std::make_shared<Octagon<T>>();
+    std::istringstream in(coords);
+    in >> *fig;
+    return fig;
 }
 
-static double tri_area_expected_equilateral() {
+static double expected_equilateral_area() {
     return std::sqrt(3.0) / 4.0;
 }
 
 static const double EPS = 1e-4;
 
+static std::vector<std::pair<double,double>> sorted_points_from_triangle(const Triangle<T>& tr) {
+    std::vector<std::pair<double,double>> pts;
+    for (std::size_t i = 0; i < tr.size(); ++i) {
+        pts.emplace_back(tr.pointAt(i).getX(), tr.pointAt(i).getY());
+    }
+    std::sort(pts.begin(), pts.end(), [](auto const& a, auto const& b){
+        if (std::fabs(a.first - b.first) > 1e-6) return a.first < b.first;
+        return a.second < b.second;
+    });
+    return pts;
+}
+
 TEST(TriangleBasic, EquilateralCorrectAreaCenter) {
-    auto t = makeTriangle("0 0 1 0 0.5 0.866025");
-    EXPECT_TRUE(t->isCorrect());
-    double area = static_cast<double>(*t);
-    EXPECT_NEAR(area, tri_area_expected_equilateral(), EPS);
-    auto c = t->getCenter();
-    EXPECT_NEAR(c.getX(), 0.5, EPS);
-    EXPECT_NEAR(c.getY(), std::sqrt(3.0)/6.0, EPS);
+    auto tri = create_triangle("0 0 1 0 0.5 0.866025");
+    EXPECT_TRUE(tri->isCorrect());
+    double area = static_cast<double>(*tri);
+    EXPECT_NEAR(area, expected_equilateral_area(), EPS);
+    auto center = tri->getCenter();
+    EXPECT_NEAR(center.getX(), 0.5, EPS);
+    EXPECT_NEAR(center.getY(), std::sqrt(3.0)/6.0, EPS);
 }
 
 TEST(TriangleInvalid, CollinearPointsInvalid) {
-    auto t = makeTriangle("0 0 1 1 2 2");
-    EXPECT_FALSE(t->isCorrect());
-    double area = static_cast<double>(*t);
+    auto tri = create_triangle("0 0 1 1 2 2");
+    EXPECT_FALSE(tri->isCorrect());
+    double area = static_cast<double>(*tri);
     EXPECT_NEAR(area, 0.0, EPS);
 }
 
 TEST(SquareBasic, UnitSquareCorrect) {
-    auto s = makeSquare("0 0 1 0 1 1 0 1");
-    EXPECT_TRUE(s->isCorrect());
-    EXPECT_NEAR(static_cast<double>(*s), 1.0, EPS);
-    auto c = s->getCenter();
-    EXPECT_NEAR(c.getX(), 0.5, EPS);
-    EXPECT_NEAR(c.getY(), 0.5, EPS);
+    auto sq = create_square("0 0 1 0 1 1 0 1");
+    EXPECT_TRUE(sq->isCorrect());
+    EXPECT_NEAR(static_cast<double>(*sq), 1.0, EPS);
+    auto center = sq->getCenter();
+    EXPECT_NEAR(center.getX(), 0.5, EPS);
+    EXPECT_NEAR(center.getY(), 0.5, EPS);
 }
 
 TEST(SquareDegenerate, DuplicatePointsInvalid) {
-    auto s = makeSquare("0 0 0 0 1 0 1 0");
-    EXPECT_FALSE(s->isCorrect());
+    auto sq = create_square("0 0 0 0 1 0 1 0");
+    EXPECT_FALSE(sq->isCorrect());
 }
 
 TEST(OctagonRegular, RadiusOneCenterZero) {
-    auto o = makeOctagon(
+    auto oct = create_octagon(
         "1.000000 0.000000 0.707107 0.707107 0.000000 1.000000 -0.707107 0.707107 "
         "-1.000000 0.000000 -0.707107 -0.707107 0.000000 -1.000000 0.707107 -0.707107"
     );
-    EXPECT_TRUE(o->isCorrect());
-    auto c = o->getCenter();
-    EXPECT_NEAR(c.getX(), 0.0, 1e-3);
-    EXPECT_NEAR(c.getY(), 0.0, 1e-3);
-    double area = static_cast<double>(*o);
+    EXPECT_TRUE(oct->isCorrect());
+    auto center = oct->getCenter();
+    EXPECT_NEAR(center.getX(), 0.0, 1e-3);
+    EXPECT_NEAR(center.getY(), 0.0, 1e-3);
+    double area = static_cast<double>(*oct);
     EXPECT_GT(area, 0.0);
 }
 
 TEST(ArrayBasic, PushAndSizeAndTotalArea) {
-    Array<FigurePtr> arr;
-    auto t = makeTriangle("0 0 1 0 0.5 0.866025");
-    auto s = makeSquare("0 0 1 0 1 1 0 1");
-    auto o = makeOctagon(
+    Array<FigurePtr> container;
+    auto t = create_triangle("0 0 1 0 0.5 0.866025");
+    auto s = create_square("0 0 1 0 1 1 0 1");
+    auto o = create_octagon(
         "1.000000 0.000000 0.707107 0.707107 0.000000 1.000000 -0.707107 0.707107 "
         "-1.000000 0.000000 -0.707107 -0.707107 0.000000 -1.000000 0.707107 -0.707107"
     );
-    arr.push_back(t);
-    arr.push_back(s);
-    arr.push_back(o);
-    EXPECT_EQ(arr.size(), 3u);
+    container.push_back(t);
+    container.push_back(s);
+    container.push_back(o);
+    EXPECT_EQ(container.size(), 3u);
     double sum = 0.0;
     if (t->isCorrect()) sum += static_cast<double>(*t);
     if (s->isCorrect()) sum += static_cast<double>(*s);
     if (o->isCorrect()) sum += static_cast<double>(*o);
-    EXPECT_NEAR(arr.totalArea(), sum, 1e-3);
+    EXPECT_NEAR(container.totalArea(), sum, 1e-3);
 }
 
 TEST(ArrayRemove, RemoveValidIndex) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
-    arr.push_back(makeSquare("0 0 1 0 1 1 0 1"));
-    EXPECT_EQ(arr.size(), 2u);
-    bool ok = arr.removeAt(0);
-    EXPECT_TRUE(ok);
-    EXPECT_EQ(arr.size(), 1u);
-    auto f = arr[0];
-    EXPECT_TRUE(f->isCorrect());
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
+    container.push_back(create_square("0 0 1 0 1 1 0 1"));
+    EXPECT_EQ(container.size(), 2u);
+    bool removed = container.removeAt(0);
+    EXPECT_TRUE(removed);
+    EXPECT_EQ(container.size(), 1u);
+    auto remaining = container[0];
+    EXPECT_TRUE(remaining->isCorrect());
 }
 
 TEST(ArrayRemoveInvalid, BadIndex) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
-    bool ok = arr.removeAt(5);
-    EXPECT_FALSE(ok);
-    EXPECT_EQ(arr.size(), 1u);
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
+    bool removed = container.removeAt(5);
+    EXPECT_FALSE(removed);
+    EXPECT_EQ(container.size(), 1u);
 }
 
 TEST(ArrayClear, Empties) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
-    arr.push_back(makeSquare("0 0 1 0 1 1 0 1"));
-    arr.clear();
-    EXPECT_EQ(arr.size(), 0u);
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
+    container.push_back(create_square("0 0 1 0 1 1 0 1"));
+    container.clear();
+    EXPECT_EQ(container.size(), 0u);
 }
 
 TEST(Equality, TrianglePermutation) {
-    Triangle<T> a;
-    std::istringstream ia("0 0 1 0 0.5 0.866025");
-    ia >> a;
-    Triangle<T> b;
-    std::istringstream ib("1 0 0.5 0.866025 0 0");
-    ib >> b;
-    auto extract_sorted = [](const Triangle<T>& tr) {
-        std::vector<std::pair<double,double>> res;
-        for (std::size_t i = 0; i < tr.size(); ++i) {
-            res.emplace_back(tr.pointAt(i).getX(), tr.pointAt(i).getY());
-        }
-        std::sort(res.begin(), res.end(), [](auto const& p1, auto const& p2){
-            if (std::fabs(p1.first - p2.first) > 1e-6) return p1.first < p2.first;
-            return p1.second < p2.second;
-        });
-        return res;
-    };
-    auto A = extract_sorted(a);
-    auto B = extract_sorted(b);
-    ASSERT_EQ(A.size(), B.size());
-    for (std::size_t i = 0; i < A.size(); ++i) {
-        EXPECT_NEAR(A[i].first, B[i].first, 1e-6);
-        EXPECT_NEAR(A[i].second, B[i].second, 1e-6);
+    Triangle<T> A;
+    std::istringstream a_in("0 0 1 0 0.5 0.866025");
+    a_in >> A;
+    Triangle<T> B;
+    std::istringstream b_in("1 0 0.5 0.866025 0 0");
+    b_in >> B;
+    auto ptsA = sorted_points_from_triangle(A);
+    auto ptsB = sorted_points_from_triangle(B);
+    ASSERT_EQ(ptsA.size(), ptsB.size());
+    for (std::size_t i = 0; i < ptsA.size(); ++i) {
+        EXPECT_NEAR(ptsA[i].first, ptsB[i].first, 1e-6);
+        EXPECT_NEAR(ptsA[i].second, ptsB[i].second, 1e-6);
     }
 }
 
 TEST(ArrayAtThrows, OutOfRangeAt) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
-    EXPECT_THROW(arr.at(2), std::out_of_range);
-    arr.clear();
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
+    EXPECT_THROW(container.at(2), std::out_of_range);
+    container.clear();
 }
 
 TEST(ArrayIndexOperator, ReturnsPointer) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeSquare("0 0 1 0 1 1 0 1"));
-    auto f = arr[0];
+    Array<FigurePtr> container;
+    container.push_back(create_square("0 0 1 0 1 1 0 1"));
+    auto f = container[0];
     EXPECT_NE(f, nullptr);
     EXPECT_TRUE(f->isCorrect());
 }
@@ -183,108 +184,105 @@ TEST(ReverseOrderTriangleAreaSame, ClockwiseVsCounter) {
     EXPECT_NEAR(static_cast<double>(a), static_cast<double>(b), 1e-9);
 }
 
-
 TEST(Additional, TriangleNegativeCoordinates) {
-    auto t = makeTriangle("-1 -1 0 -1 -0.5 -0.133975");
-    EXPECT_TRUE(t->isCorrect());
-    EXPECT_GT(static_cast<double>(*t), 0.0);
+    auto tri = create_triangle("-1 -1 0 -1 -0.5 -0.133975");
+    EXPECT_TRUE(tri->isCorrect());
+    EXPECT_GT(static_cast<double>(*tri), 0.0);
 }
 
-
 TEST(Additional, TriangleDuplicatePointsInvalid) {
-    auto t = makeTriangle("0 0 0 0 1 0");
-    EXPECT_FALSE(t->isCorrect());
+    auto tri = create_triangle("0 0 0 0 1 0");
+    EXPECT_FALSE(tri->isCorrect());
 }
 
 TEST(Additional, TriangleNearlyCollinearInvalid) {
-    auto t = makeTriangle("0 0 1 1 2 2.0001");
-    EXPECT_FALSE(t->isCorrect());
-    EXPECT_NEAR(static_cast<double>(*t), 0.0, 1e-3);
+    auto tri = create_triangle("0 0 1 1 2 2.0001");
+    EXPECT_FALSE(tri->isCorrect());
+    EXPECT_NEAR(static_cast<double>(*tri), 0.0, 1e-3);
 }
 
 TEST(Additional, SquareRotated90Correct) {
-    auto s = makeSquare("1 0 0 1 -1 0 0 -1");
-    EXPECT_TRUE(s->isCorrect());
-    auto c = s->getCenter();
-    EXPECT_NEAR(c.getX(), 0.0, 1e-6);
-    EXPECT_NEAR(c.getY(), 0.0, 1e-6);
+    auto sq = create_square("1 0 0 1 -1 0 0 -1");
+    EXPECT_TRUE(sq->isCorrect());
+    auto center = sq->getCenter();
+    EXPECT_NEAR(center.getX(), 0.0, 1e-6);
+    EXPECT_NEAR(center.getY(), 0.0, 1e-6);
 }
 
 TEST(Additional, SquareNoiseAcceptsWithinEps) {
-    auto s = makeSquare("0 0 1.00005 0 1.00005 1.00005 0 1.00005");
-    EXPECT_TRUE(s->isCorrect());
+    auto sq = create_square("0 0 1.00005 0 1.00005 1.00005 0 1.00005");
+    EXPECT_TRUE(sq->isCorrect());
 }
 
 TEST(Additional, SquareUnequalSidesInvalid) {
-    auto s = makeSquare("0 0 2 0 2 1 0 1");
-    EXPECT_FALSE(s->isCorrect());
+    auto sq = create_square("0 0 2 0 2 1 0 1");
+    EXPECT_FALSE(sq->isCorrect());
 }
 
 TEST(Additional, OctagonShiftedCenter) {
-    auto o = makeOctagon(
+    auto oc = create_octagon(
         "3.000000 1.000000 2.414214 2.414214 1.000000 3.000000 -0.414214 2.414214 "
         "-1.000000 1.000000 -0.414214 -0.414214 1.000000 -1.000000 2.414214 -0.414214"
     );
-    EXPECT_TRUE(o->isCorrect());
-    auto c = o->getCenter();
-    EXPECT_NEAR(c.getX(), 1.0, 1e-3);
-    EXPECT_NEAR(c.getY(), 1.0, 1e-3);
+    EXPECT_TRUE(oc->isCorrect());
+    auto center = oc->getCenter();
+    EXPECT_NEAR(center.getX(), 1.0, 1e-3);
+    EXPECT_NEAR(center.getY(), 1.0, 1e-3);
 }
 
 TEST(Additional, OctagonCollinearInvalid) {
-    auto o = makeOctagon("0 0 1 0 2 0 3 0 4 0 5 0 6 0 7 0");
-    EXPECT_FALSE(o->isCorrect());
+    auto oc = create_octagon("0 0 1 0 2 0 3 0 4 0 5 0 6 0 7 0");
+    EXPECT_FALSE(oc->isCorrect());
 }
 
 TEST(Additional, OctagonSkewEqualSides) {
-    auto o = makeOctagon(
+    auto oc = create_octagon(
         "2 0 1.41421356 1.41421356 0 2 -1.41421356 1.41421356 "
         "-2 0 -1.41421356 -1.41421356 0 -2 1.41421356 -1.41421356"
     );
-    EXPECT_TRUE(o->isCorrect());
+    EXPECT_TRUE(oc->isCorrect());
 }
 
 TEST(Additional, ArrayManyPushesRemovesStress) {
-    Array<FigurePtr> arr;
-    for (int i = 0; i < 30; ++i) arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
-    EXPECT_EQ(arr.size(), 30u);
-    for (int i = 0; i < 30; ++i) EXPECT_TRUE(arr.removeAt(0));
-    EXPECT_EQ(arr.size(), 0u);
+    Array<FigurePtr> container;
+    for (int i = 0; i < 30; ++i) container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
+    EXPECT_EQ(container.size(), 30u);
+    for (int i = 0; i < 30; ++i) EXPECT_TRUE(container.removeAt(0));
+    EXPECT_EQ(container.size(), 0u);
 }
 
 TEST(Additional, ArrayTotalAreaMixedValidity) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 1 2 2")); // invalid
-    arr.push_back(makeSquare("0 0 1 0 1 1 0 1")); // valid
-    arr.push_back(makeOctagon("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0")); // invalid
-    EXPECT_NEAR(arr.totalArea(), 1.0, 1e-3);
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 1 2 2"));
+    container.push_back(create_square("0 0 1 0 1 1 0 1"));
+    container.push_back(create_octagon("0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"));
+    EXPECT_NEAR(container.totalArea(), 1.0, 1e-3);
 }
 
 TEST(Additional, ArrayRemoveLast) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
-    arr.push_back(makeSquare("0 0 1 0 1 1 0 1"));
-    EXPECT_TRUE(arr.removeAt(arr.size() - 1));
-    EXPECT_EQ(arr.size(), 1u);
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
+    container.push_back(create_square("0 0 1 0 1 1 0 1"));
+    EXPECT_TRUE(container.removeAt(container.size() - 1));
+    EXPECT_EQ(container.size(), 1u);
 }
 
 TEST(Additional, RemoveWithHugeIndexFail) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeSquare("0 0 1 0 1 1 0 1"));
-    bool ok = arr.removeAt(static_cast<std::size_t>(-1));
+    Array<FigurePtr> container;
+    container.push_back(create_square("0 0 1 0 1 1 0 1"));
+    bool ok = container.removeAt(static_cast<std::size_t>(-1));
     EXPECT_FALSE(ok);
-    arr.clear();
+    container.clear();
 }
 
-
 TEST(Additional, TriangleCopyAssignmentPreserves) {
-    Triangle<T> a;
-    std::istringstream ia("0 0 1 0 0.5 0.866025");
-    ia >> a;
-    Triangle<T> b;
-    b = a;
-    EXPECT_TRUE(b.isCorrect());
-    EXPECT_NEAR(static_cast<double>(a), static_cast<double>(b), 1e-9);
+    Triangle<T> src;
+    std::istringstream in("0 0 1 0 0.5 0.866025");
+    in >> src;
+    Triangle<T> dst;
+    dst = src;
+    EXPECT_TRUE(dst.isCorrect());
+    EXPECT_NEAR(static_cast<double>(src), static_cast<double>(dst), 1e-9);
 }
 
 TEST(Additional, TriangleInequalityDifferentNotEqual) {
@@ -298,11 +296,11 @@ TEST(Additional, TriangleInequalityDifferentNotEqual) {
 }
 
 TEST(Additional, PrintAllOutputContainsPoints) {
-    Array<FigurePtr> arr;
-    arr.push_back(makeTriangle("0 0 1 0 0.5 0.866025"));
+    Array<FigurePtr> container;
+    container.push_back(create_triangle("0 0 1 0 0.5 0.866025"));
     std::ostringstream buffer;
     std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
-    arr.printAll();
+    container.printAll();
     std::cout.rdbuf(old);
     std::string out = buffer.str();
     EXPECT_NE(out.find("(0"), std::string::npos);

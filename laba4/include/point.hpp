@@ -7,26 +7,26 @@
 
 template<Scalar T>
 class Point {
-    T x;
-    T y;
+    T x_;
+    T y_;
 public:
-    Point(): x(T{}), y(T{}) {}
-    Point(T x_, T y_): x(x_), y(y_) {}
+    Point(): x_(T{}), y_(T{}) {}
+    Point(T x, T y): x_(x), y_(y) {}
     Point(const Point& other) = default;
     Point(Point&& other) noexcept = default;
     ~Point() = default;
     Point& operator=(const Point& other) = default;
     Point& operator=(Point&& other) noexcept = default;
 
-    T getX() const { return x; }
-    T getY() const { return y; }
-    void setX(T v) { x = v; }
-    void setY(T v) { y = v; }
+    T getX() const { return x_; }
+    T getY() const { return y_; }
+    void setX(T v) { x_ = v; }
+    void setY(T v) { y_ = v; }
 
-    Point operator+(const Point& r) const { return Point(x + r.x, y + r.y); }
-    Point operator-(const Point& r) const { return Point(x - r.x, y - r.y); }
-    Point& operator+=(const Point& r) { x += r.x; y += r.y; return *this; }
-    Point& operator-=(const Point& r) { x -= r.x; y -= r.y; return *this; }
+    Point operator+(const Point& r) const { return Point(x_ + r.x_, y_ + r.y_); }
+    Point operator-(const Point& r) const { return Point(x_ - r.x_, y_ - r.y_); }
+    Point& operator+=(const Point& r) { x_ += r.x_; y_ += r.y_; return *this; }
+    Point& operator-=(const Point& r) { x_ -= r.x_; y_ -= r.y_; return *this; }
 };
 
 template<Scalar T>
@@ -48,10 +48,11 @@ std::istream& operator>>(std::istream& is, Point<T>& p) {
 
 template<Scalar T>
 bool operator==(const Point<T>& a, const Point<T>& b) {
-    if constexpr(std::is_floating_point_v<T>) {
-        long double EPS = 1e-6L;
-        return std::fabsl(static_cast<long double>(a.getX()) - static_cast<long double>(b.getX())) < EPS
-            && std::fabsl(static_cast<long double>(a.getY()) - static_cast<long double>(b.getY())) < EPS;
+    if constexpr (std::is_floating_point_v<T>) {
+        constexpr long double EPS = 1e-6L;
+        long double dx = std::fabsl(static_cast<long double>(a.getX()) - static_cast<long double>(b.getX()));
+        long double dy = std::fabsl(static_cast<long double>(a.getY()) - static_cast<long double>(b.getY()));
+        return dx < EPS && dy < EPS;
     } else {
         return a.getX() == b.getX() && a.getY() == b.getY();
     }

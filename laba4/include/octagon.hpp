@@ -14,20 +14,20 @@ public:
     ~Octagon() override = default;
 
     Point<T> getCenter() const override {
-        const long double EPS = 1e-9L;
-        long double sum = 0.0L;
+        constexpr long double EPS = 1e-9L;
+        long double crossSum = 0.0L;
         for (std::size_t i = 0; i < 8; ++i) {
             std::size_t j = (i + 1) % 8;
             long double xi = static_cast<long double>(Figure<T>::pointAt(i).getX());
             long double yi = static_cast<long double>(Figure<T>::pointAt(i).getY());
             long double xj = static_cast<long double>(Figure<T>::pointAt(j).getX());
             long double yj = static_cast<long double>(Figure<T>::pointAt(j).getY());
-            sum += xi * yj - xj * yi;
+            crossSum += xi * yj - xj * yi;
         }
-        long double area2 = 0.5L * sum;
+        long double area2 = 0.5L * crossSum;
         if (std::fabsl(area2) < EPS) return Point<T>(T{}, T{});
-        long double cx = 0.0L;
-        long double cy = 0.0L;
+
+        long double cx = 0.0L, cy = 0.0L;
         for (std::size_t i = 0; i < 8; ++i) {
             std::size_t j = (i + 1) % 8;
             long double xi = static_cast<long double>(Figure<T>::pointAt(i).getX());
@@ -44,18 +44,22 @@ public:
     }
 
     bool isCorrect() const override {
-        const long double EPS = 1e-6L;
+        constexpr long double EPS = 1e-6L;
         if (Figure<T>::length != 8) return false;
-        long double d[8];
+        long double sides[8];
         for (int i = 0; i < 8; ++i) {
             int j = (i + 1) % 8;
-            long double dx = static_cast<long double>(Figure<T>::pointAt(j).getX()) - static_cast<long double>(Figure<T>::pointAt(i).getX());
-            long double dy = static_cast<long double>(Figure<T>::pointAt(j).getY()) - static_cast<long double>(Figure<T>::pointAt(i).getY());
-            d[i] = dx*dx + dy*dy;
-            if (d[i] < EPS) return false;
+            long double xi = static_cast<long double>(Figure<T>::pointAt(i).getX());
+            long double yi = static_cast<long double>(Figure<T>::pointAt(i).getY());
+            long double xj = static_cast<long double>(Figure<T>::pointAt(j).getX());
+            long double yj = static_cast<long double>(Figure<T>::pointAt(j).getY());
+            long double dx = xj - xi;
+            long double dy = yj - yi;
+            sides[i] = dx*dx + dy*dy;
+            if (sides[i] < EPS) return false;
         }
         for (int i = 1; i < 8; ++i) {
-            if (std::fabsl(d[i] - d[0]) > EPS) return false;
+            if (std::fabsl(sides[i] - sides[0]) > EPS) return false;
         }
         double area = static_cast<double>(static_cast<const Octagon&>(*this));
         if (area < 1e-9) return false;
@@ -63,16 +67,16 @@ public:
     }
 
     explicit operator double() const override {
-        long double s = 0.0L;
+        long double acc = 0.0L;
         for (std::size_t i = 0; i < 8; ++i) {
             std::size_t j = (i + 1) % 8;
             long double xi = static_cast<long double>(Figure<T>::pointAt(i).getX());
             long double yi = static_cast<long double>(Figure<T>::pointAt(i).getY());
             long double xj = static_cast<long double>(Figure<T>::pointAt(j).getX());
             long double yj = static_cast<long double>(Figure<T>::pointAt(j).getY());
-            s += xi * yj - xj * yi;
+            acc += xi * yj - xj * yi;
         }
-        return static_cast<double>(0.5L * std::fabsl(s));
+        return static_cast<double>(0.5L * std::fabsl(acc));
     }
 
     std::unique_ptr<Figure<T>> clone() const override {

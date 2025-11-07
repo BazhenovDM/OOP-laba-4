@@ -14,39 +14,42 @@ public:
     ~Triangle() override = default;
 
     Point<T> getCenter() const override {
-        long double cx = 0.0L;
-        long double cy = 0.0L;
+        long double sx = 0.0L, sy = 0.0L;
         for (std::size_t i = 0; i < 3; ++i) {
-            cx += static_cast<long double>(Figure<T>::pointAt(i).getX());
-            cy += static_cast<long double>(Figure<T>::pointAt(i).getY());
+            sx += static_cast<long double>(Figure<T>::pointAt(i).getX());
+            sy += static_cast<long double>(Figure<T>::pointAt(i).getY());
         }
-        return Point<T>(static_cast<T>(cx / 3.0L), static_cast<T>(cy / 3.0L));
+        return Point<T>(static_cast<T>(sx / 3.0L), static_cast<T>(sy / 3.0L));
     }
 
     bool isCorrect() const override {
-        const long double EPS = 1e-6L;
-        long double d[3];
+        constexpr long double EPS = 1e-6L;
+        long double ds[3];
         for (int i = 0; i < 3; ++i) {
             int j = (i + 1) % 3;
-            long double dx = static_cast<long double>(Figure<T>::pointAt(j).getX()) - static_cast<long double>(Figure<T>::pointAt(i).getX());
-            long double dy = static_cast<long double>(Figure<T>::pointAt(j).getY()) - static_cast<long double>(Figure<T>::pointAt(i).getY());
-            d[i] = dx*dx + dy*dy;
-            if (d[i] < EPS) return false;
+            auto xi = static_cast<long double>(Figure<T>::pointAt(i).getX());
+            auto yi = static_cast<long double>(Figure<T>::pointAt(i).getY());
+            auto xj = static_cast<long double>(Figure<T>::pointAt(j).getX());
+            auto yj = static_cast<long double>(Figure<T>::pointAt(j).getY());
+            long double dx = xj - xi;
+            long double dy = yj - yi;
+            ds[i] = dx*dx + dy*dy;
+            if (ds[i] < EPS) return false;
         }
-        return std::fabsl(d[0] - d[1]) < EPS && std::fabsl(d[1] - d[2]) < EPS;
+        return (std::fabsl(ds[0] - ds[1]) < EPS) && (std::fabsl(ds[1] - ds[2]) < EPS);
     }
 
     explicit operator double() const override {
-        long double s = 0.0L;
+        long double area2 = 0.0L;
         for (std::size_t i = 0; i < 3; ++i) {
             std::size_t j = (i + 1) % 3;
             long double xi = static_cast<long double>(Figure<T>::pointAt(i).getX());
             long double yi = static_cast<long double>(Figure<T>::pointAt(i).getY());
             long double xj = static_cast<long double>(Figure<T>::pointAt(j).getX());
             long double yj = static_cast<long double>(Figure<T>::pointAt(j).getY());
-            s += xi * yj - xj * yi;
+            area2 += xi * yj - xj * yi;
         }
-        return static_cast<double>(0.5L * std::fabsl(s));
+        return static_cast<double>(0.5L * std::fabsl(area2));
     }
 
     std::unique_ptr<Figure<T>> clone() const override {

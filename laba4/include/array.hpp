@@ -15,7 +15,7 @@ public:
     Array& operator=(const Array&) = delete;
 
     void push_back(E e) {
-        if (!e) return;
+        if (e == nullptr) return;
         data.push_back(std::move(e));
     }
 

@@ -12,8 +12,8 @@ protected:
     std::vector<std::unique_ptr<Point<T>>> points;
     std::size_t length;
 
-    void ensure_points_created() {
-        if (points.size() < length) {
+    void rebuild_points_if_needed() {
+        if (points.size() != length) {
             points.clear();
             points.reserve(length);
             for (std::size_t i = 0; i < length; ++i)
@@ -23,7 +23,7 @@ protected:
 
 public:
     Figure(std::size_t len = 0) : points(), length(len) {
-        ensure_points_created();
+        rebuild_points_if_needed();
     }
 
     virtual ~Figure() = default;
@@ -34,7 +34,7 @@ public:
     virtual std::unique_ptr<Figure<T>> clone() const = 0;
 
     virtual void input(std::istream& is) {
-        ensure_points_created();
+        rebuild_points_if_needed();
         for (std::size_t i = 0; i < length; ++i) {
             T x, y;
             is >> x >> y;
@@ -44,16 +44,13 @@ public:
     }
 
     virtual void output(std::ostream& os) const {
-        for (std::size_t i = 0; i < length; ++i) {
-            os << *points[i] << " ";
-        }
+        for (std::size_t i = 0; i < length; ++i) os << *points[i] << " ";
     }
 
     bool operator==(const Figure& other) const {
         if (length != other.length) return false;
-        for (std::size_t i = 0; i < length; ++i) {
+        for (std::size_t i = 0; i < length; ++i)
             if (!(*points[i] == *other.points[i])) return false;
-        }
         return true;
     }
 
